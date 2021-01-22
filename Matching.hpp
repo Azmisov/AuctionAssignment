@@ -2,7 +2,7 @@
 // Validation flags
 #define V false
 // Disables assertions
-//#define NDEBUG
+#define NDEBUG
 
 #include <cassert>
 #include <cmath>
