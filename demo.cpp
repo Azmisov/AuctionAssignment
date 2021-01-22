@@ -45,9 +45,9 @@ int main(int argc, char** argv){
 		slack = args_map["slack"].as<float>();
 		verbose = args_map["verbose"].as<bool>();
 	} catch (const std::exception& e){
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
+		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
 
 	// First, create a new Matching object with the maximum number of persons and objects, respectively;
 	// This same object can be reused for multiple problems, so long as the person/object sets stay <= the max 
