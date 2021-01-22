@@ -2,7 +2,7 @@
 // Validation flags
 #define V false
 // Disables assertions
-#define NDEBUG
+//#define NDEBUG
 
 #include <cassert>
 #include <cmath>
@@ -16,11 +16,11 @@ static const float MAX_FLT = std::numeric_limits<float>::max();
 class Matching{
 public:
 	// Arc benefit for artificial objects
-	float slack_benefit = MIN_FLT;
+	float slack_benefit = -1e-10;
 	// Arc benefits, in the form midx*n + nidx (does not include artificial object arcs)
 	// Since n > m, cache locality benefits the worst case of traversing n arcs
 	float *arcs;
-	// m persons + n objects + m artificial objects
+	// m persons + n objects + m artificial objects; see docs in solve for "sort" structure
 	// Split into separate arrays, for better caching
 	float *value;		// profit/price, depending on if person/object
 	uint *match;		// index of current match (if assigned)
@@ -42,5 +42,5 @@ public:
 	// Debugging stuff
 	void validate(uint m, uint n, uint unassigned, uint below_lambda, uint equal_lambda, uint above_lambda, float lambda);
 	void print_state(bool person, uint m, uint n, uint unassigned, uint below_lambda, uint equal_lambda, uint above_lambda, uint lambda);
-	void is_optimal(uint m, uint n, float slack);
+	void is_optimal(uint m, uint n, float slack, float fuzz = 0.1f);
 };

@@ -429,48 +429,69 @@ void Matching::print_state(bool person, uint m, uint n, uint unassigned, uint be
 		std::cout << std::endl;
 	}
 }
-void Matching::is_optimal(uint m, uint n, float slack){
-	/* To be optimal:
-		profit + price >= arc-slack, for all arcs
-		profit + price = arc, for all matched arcs
-		price of all unassigned objects <= min(price of all assigned objects)
+void Matching::is_optimal(uint m, uint n, float slack, float fuzz){
+	/* Note this is to be called at the end of solve;
+		fuzz = small value to deal with floating point math deviations
+
+		To be optimal:
+		1) profit + price >= arc-slack, for all arcs
+		2) profit + price = arc, for all matched arcs
+		3) price of all unassigned objects <= min(price of all assigned objects)
+			e.g. equivalent to max(price of all unassigned objects) <= price of all assigned objects
 	*/
-	float fuzz = .1;
 	std::cout.precision(12);
 	for (int i=0; i<m; i++){
 		for (int j=0; j<n; j++){
-			float a = value[i]+value[m+j], b = arcs[i*n+j]-slack;
-			if (a < b)
+			float a = value[i]+value[m+j],
+				b = arcs[i*n+j]-slack;
+			if (a+fuzz < b){
+				printf("Optimality #C1 failed for arc %u -> %u: ", i, j);
 				std::cout << a << " >= " << b << std::endl;
-			assert(a-b >= -fuzz);
+				throw std::runtime_error("Assignment not optimal");
+			}
 		}
-		float a = value[i]+value[m+n+i], b = slack_benefit-slack;
-		if (a < b)
+		// artificial object arc
+		float a = value[i]+value[m+n+i],
+			b = slack_benefit-slack;
+		if (a+fuzz < b){
+			printf("Optimality #C1 failed for arc %u -> null: ", i);
 			std::cout << a << " >= " << b << std::endl;
-		assert(a-b >= -fuzz);
+			throw std::runtime_error("Assignment not optimal");
+		}
 		uint pair = match[i];
 		if (pair >= m+n){
 			float a = value[i]+value[pair];
-			if (a != b)
+			if (std::abs(a-slack_benefit) > fuzz){
+				printf("Optimality #C2 failed for unassigned %u: ", i);
 				std::cout << a << " == " << slack_benefit << std::endl;
-			assert(std::abs(a-slack_benefit) < fuzz);
+				throw std::runtime_error("Assignment not optimal");
+			}
 		}
 		else{
-			float arc1 = arcs[i*n+(pair-m)], dual = value[i]+value[pair];
-			if (arc1 != dual)
+			float arc1 = arcs[i*n+(pair-m)],
+				dual = value[i]+value[pair];
+			if (std::abs(arc1-dual) > fuzz){
+				printf("Optimality #C2 failed for assignment %u -> %u: ", i, pair-m);
 				std::cout << arc1 << " == " << dual << std::endl;
-			assert(std::abs(arc1-dual) < fuzz);
+				throw std::runtime_error("Assignment not optimal");
+			}
 		}
 	}
+
 	float max_p = MIN_FLT;
 	uint size = 2*m+n;
-	for (int i=m; i<size; i++){
-		float p = value[sort[i]];
-		if (i >= size-m){
-			if (p < max_p)
+	for (int si=m; si<size; si++){
+		int j = sort[si]; // object number
+		float p = value[j]; // price of object
+		// [size-m, size) = assigned objects
+		if (si >= size-m){
+			if (p+fuzz < max_p){
+				printf("Optimality #C3 failed for assigned object %d: ", j);
 				std::cout << p << " >= " << max_p << std::endl;
-			assert(p-max_p >= -fuzz);
+				throw std::runtime_error("Assignment not optimal");
+			}
 		}
+		// [m, size-m) = unassigned objects
 		else if (p > max_p)
 			max_p = p;
 	}
